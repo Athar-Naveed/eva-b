@@ -13,7 +13,7 @@ EVA-B is our term project, the idea is that it will assist its user in doing dai
 - Text-Audio
 2. Human, Plant, and Animal Recognition
 3. High Temperature Alarm
-4. Kids Assistant (means, watch sleeping kids and send video stream to mobile app)
+4. AI Kid Assistant (means, watch sleeping kids and send video stream to mobile app)
 5. Mobile App Control
 6. Should Work as a Bluetooth speaker
-7. Can take photos for you and capture kids special moments.
+7. Can take photos for you and capture kids special moments using AI.
