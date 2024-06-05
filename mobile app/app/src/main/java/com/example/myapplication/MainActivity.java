@@ -1,20 +1,29 @@
 package com.example.myapplication;
+
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+
 import androidx.appcompat.app.AppCompatActivity;
+
+import org.json.JSONException;
 import org.json.JSONObject;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+
+import java.io.IOException;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 
 public class MainActivity extends AppCompatActivity {
-
+    String apiUrl = "192.168.43.226";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -28,69 +37,59 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 String userInput = editTextUserInput.getText().toString();
-                sendPostRequest(userInput, textViewResponse);
+                try {
+                    sendPostRequest(userInput, textViewResponse);
+                } catch (JSONException e) {
+                    throw new RuntimeException(e);
+                }
             }
         });
     }
 
-    private void sendPostRequest(String userInput, TextView textViewResponse) {
-        new Thread(new Runnable() {
+    private void sendPostRequest(String userInput, final TextView textViewResponse) throws JSONException {
+        OkHttpClient client = new OkHttpClient();
+
+        JSONObject jsonParam = new JSONObject();
+        jsonParam.put("message", userInput); // Update the key to "message"
+
+        RequestBody requestBody = RequestBody.create(MediaType.get("application/json; charset=utf-8"), jsonParam.toString());
+
+        Request request = new Request.Builder()
+                .url("http://192.168.43.226:1000/api/submit")
+                .post(requestBody)
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
             @Override
-            public void run() {
-                try {
-                    URL url = new URL("http://192.168.43.226:1000/api/submit"); // Use your host IP and port
-                    HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-                    urlConnection.setRequestMethod("POST");
-                    urlConnection.setDoOutput(true);
-                    urlConnection.setRequestProperty("Content-Type", "application/json");
-
-                    // Create JSON object to send to the server
-                    JSONObject jsonParam = new JSONObject();
-                    jsonParam.put("userInput", userInput);
-
-                    // Write the JSON data to the output stream
-                    OutputStream os = urlConnection.getOutputStream();
-                    os.write(jsonParam.toString().getBytes("UTF-8"));
-                    os.close();
-
-                    int responseCode = urlConnection.getResponseCode();
-                    if (responseCode == HttpURLConnection.HTTP_OK) { // 200 OK
-                        BufferedReader in = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
-                        String inputLine;
-                        StringBuilder response = new StringBuilder();
-
-                        while ((inputLine = in.readLine()) != null) {
-                            response.append(inputLine);
-                        }
-                        in.close();
-
-                        // Update UI with the response on the main thread
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                textViewResponse.setText(response.toString());
-                            }
-                        });
-                    } else {
-                        // Handle response code other than 200
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                textViewResponse.setText("POST request failed. Response Code: " + responseCode);
-                            }
-                        });
+            public void onFailure(Call call, IOException e) {
+                e.printStackTrace();
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        textViewResponse.setText("Error: " + e.getMessage());
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    // Update UI with the exception on the main thread
+                });
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                if (response.isSuccessful()) {
+                    final String responseBody = response.body().string();
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            textViewResponse.setText("Exception: " + e.getMessage());
+                            textViewResponse.setText(responseBody);
+                        }
+                    });
+                } else {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            textViewResponse.setText("Error: " + response.code());
                         }
                     });
                 }
             }
-        }).start();
+        });
     }
 }

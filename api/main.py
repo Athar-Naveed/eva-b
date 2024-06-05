@@ -21,5 +21,5 @@ def submit(item):
     print(f"Received input from user: {item}")
     return {"status": "success", "input_received": item}
 if __name__ == "__main__":
-   uvicorn.run("main:app",reload=True,port=1000,host="192.168.43.226")
+   uvicorn.run("main:app",reload=True,port=1000,host="192.168.43.226") 
 

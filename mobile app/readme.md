@@ -1,1 +1,0 @@
-# Embedded Virtual Assistant Bot(EVA-B) Mobile App Docs here
