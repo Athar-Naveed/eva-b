@@ -21,9 +21,9 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
-
 public class MainActivity extends AppCompatActivity {
     String apiUrl = "192.168.43.226";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -73,22 +73,25 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-                if (response.isSuccessful()) {
-                    final String responseBody = response.body().string();
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            textViewResponse.setText(responseBody);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (response.isSuccessful()) {
+                            try {
+                                // Parse the JSON response
+                                String responseBody = response.body().string();
+                                JSONObject jsonResponse = new JSONObject(responseBody);
+                                JSONObject inputReceived = jsonResponse.getJSONObject("input_received");
+                                String message = inputReceived.getString("message");
+                                textViewResponse.setText("Response: " + message);
+                            } catch (Exception e) {
+                                textViewResponse.setText("Error parsing response: " + e.getMessage());
+                            }
+                        } else {
+                            textViewResponse.setText("Error: " + response.message());
                         }
-                    });
-                } else {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            textViewResponse.setText("Error: " + response.code());
-                        }
-                    });
-                }
+                    }
+                });
             }
         });
     }
