@@ -73,25 +73,29 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (response.isSuccessful()) {
-                            try {
-                                // Parse the JSON response
-                                String responseBody = response.body().string();
-                                JSONObject jsonResponse = new JSONObject(responseBody);
-                                JSONObject inputReceived = jsonResponse.getJSONObject("input_received");
-                                String message = inputReceived.getString("message");
-                                textViewResponse.setText("Response: " + message);
-                            } catch (Exception e) {
-                                textViewResponse.setText("Error parsing response: " + e.getMessage());
+                if (response.isSuccessful()) {
+                    final String responseBody = response.body().string();
+                    try {
+                        JSONObject jsonObject = new JSONObject(responseBody);
+                        JSONObject inputReceived = jsonObject.getJSONObject("input_received");
+                        String message = inputReceived.getString("message");
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                textViewResponse.setText(message);
                             }
-                        } else {
-                            textViewResponse.setText("Error: " + response.message());
-                        }
+                        });
+                    } catch (JSONException e) {
+                        e.printStackTrace();
                     }
-                });
+                } else {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            textViewResponse.setText("Error: " + response.code());
+                        }
+                    });
+                }
             }
         });
     }
