@@ -16,10 +16,13 @@ def index():
             return {"message":e,"status":404}   
     except Exception as e:
         return {"message":e,"status":404}
+#--------------------------
+# simple post request
+#--------------------------
 @app.post("/api/submit")
 def submit(item):
     print(f"Received input from user: {item}")
     return {"status": "success", "input_received": item}
 if __name__ == "__main__":
-   uvicorn.run("main:app",reload=True,port=1000,host="192.168.43.226")
+   uvicorn.run("main:app",reload=True)
 

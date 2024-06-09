@@ -38,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 try {
-                    URL url = new URL("http://192.168.43.226:1000/api/submit"); // Use your host IP and port
+                    URL url = new URL("http://192.168.44.115:1000/api/submit"); // Use your host IP and port
                     HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
                     urlConnection.setRequestMethod("POST");
                     urlConnection.setDoOutput(true);
@@ -94,3 +94,19 @@ public class MainActivity extends AppCompatActivity {
         }).start();
     }
 }
+
+/*
+* on clicking the button get all the texts
+* next:
+* HashMp<String,object> data = new hashMap<>();
+* data.put("name",name);
+* data.put("id",id);
+*
+* FirebaseDatabase.getInstance().getReference().child("Students").setValue(data).addOnSuccessListener(new On SuccessListener){
+*
+* }
+*
+* If we want to connect 2 or more activities with each other, we'll use 'Intent'
+*
+* Firebase REcycler Adapter
+* */
