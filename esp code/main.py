@@ -10,15 +10,61 @@ import socket,network,time,camera
 
 class ESP32MainCode:
     def __init__(self) -> None:
+        self.checks()
         self.greet_disp()
-        self.esp_temp_celsius = self.esp_temp()
+        
     
-    def greet_disp(self)->None:
-        self.display_code("Hi from EVA!")
+    def greet_disp(self)->bool:
+        display_check = self.display_code("Hi from EVA!")
+        return display_check
+        
+    def checks(self):
+        print("Running checks...")
+        # --------------------
+        # check_variables
+        # --------------------
+        call_disp = 0
+        call_temp = 0
+        # --------------------
+        # checking display
+        # --------------------
+        print("Checking Display...")
+        while call_disp < 4:
+            call_disp += 1
+            check_disp = self.greet_disp()
+            if check_disp:
+                print("Display Check Okay!")
+                time.sleep(2)
+                break
+        else:
+            print("Can't connect to display!")
+            time.sleep(2)
+        # --------------------
+        # checking esp32-cam temp
+        # --------------------
+        print("Checking ESP32-cam temp...")
+        self.display_code(f"Checking ESP32-cam temp...")
+        time.sleep(2)
+        while call_temp < 4:
+            call_temp += 1
+            check_temp = self.esp_temp()
+            if check_temp and check_temp < 58:
+                print("Temp. Check Okay!")
+                self.display_code(f"Temp. Check Okay! {check_temp}C")
+                time.sleep(2)
+                break
+        else:
+            print("Too hot to run esp32-cam!")
+            self.display_code("Too hot to run esp32-cam!")
+            time.sleep(2)
+        print("Running checks completed!")
+        self.display_code("Running checks completed!")
+        time.sleep(2)
+        
     
     def esp_temp(self)->None:
         """
-        Print the temperature of the ESP32-CAM and inspect ULP object.
+        Print the temperature of the ESP32-CAM.
 
         params:
         None
@@ -35,7 +81,7 @@ class ESP32MainCode:
         # print the temperature in celsius
         # ----------------------
         temperature = round((esp32.raw_temperature() - 32) * (5 / 9),2)
-        print(f"ESP32-cam temperature: {temperature}C")
+        print(f"ESP32-cam temperature: {temperature}°C")
         return temperature
     
     def wifi_access_point(self, ssid="ESP32-CAM", password="12345678"):
@@ -109,7 +155,7 @@ class ESP32MainCode:
         # ----------------------
         return bot_resp
 
-    def display_code(self, user_input: str) -> str:
+    def display_code(self, user_input: str) -> bool:
         """
         Display code: this code will display output text on the oled display 
 
@@ -117,26 +163,23 @@ class ESP32MainCode:
         user_input: str - the text to be send to the AIML (currently) and MLLM (future) for response
 
         return:
-        resp: str - the response from AIML/MLLM
+        bool - True if display device is found and text is shown, False otherwise
         """
         # ----------------------
         # imports
         # ----------------------
         from machine import Pin, SoftI2C
         import ssd1306
-        #from bot_convo import AIML
         
-        # ----------------------
-        # ----------------------
-        # AIML class
-        #aiml = AIML()
-        #bot_resp = aiml.response_to_user(user_input)
-        #print(bot_resp)
-
+        
         # ----------------------
         # initialize I2C interface
         # ----------------------
-        i2c = SoftI2C(scl=Pin(14), sda=Pin(15))
+        i2c = SoftI2C(scl=Pin(15), sda=Pin(14))
+        devices = i2c.scan()
+        if not devices:
+            return False
+        
         # ----------------------
         # initialize the OLED display
         # ----------------------
@@ -151,13 +194,31 @@ class ESP32MainCode:
         oled.show()
 
         # ----------------------
+        # split the text into lines that fit the display width
+        # ----------------------
+        max_chars_per_line = 15  # This value depends on the font size, adjust as needed
+        lines = []
+        while user_input:
+            if len(user_input) > max_chars_per_line:
+                line = user_input[:max_chars_per_line]
+                user_input = user_input[max_chars_per_line:]
+            else:
+                line = user_input
+                user_input = ""
+            lines.append(line)
+        
+        # ----------------------
         # showing the text
         # ----------------------
-        while True:
-            oled.fill(0)
-            oled.text('Hi!', 0, 0)
-            oled.text('ESP32 with OLED', 0, 10)
-            oled.show()
+        oled.fill(0)
+        y = 0
+        for line in lines:
+            oled.text(line, 0, y)
+            y += 10  # Adjust this value based on the font height
+            if y >= oled_height:
+                break
+        oled.show()
+        return True
             
     def connect_to_wifi(self, ssid: str, password: str, max_attempts: int = 20) -> str:
         """
@@ -294,18 +355,56 @@ class ESP32MainCode:
         # ----------------------
         # ----------------------
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        time.sleep(2)
         server_socket.bind((ip_address, port))
+        time.sleep(1)
         server_socket.listen(5)  # Queue up to 5 connections
         print("Server started at {}:{}".format(ip_address, port))
         # ----------------------
         # ----------------------
         return server_socket
+    
+    def handle_client(self, client_socket):
+        import json
+        try:
+            request = client_socket.recv(1024)
+            request_str = request.decode('utf-8')
+            print("Request received:", request_str)
+            
+            if "POST /api/text_message_display" in request_str:
+                content_length = int(request_str.split('Content-Length: ')[1].split('\r\n')[0])
+                body = request_str.split('\r\n\r\n')[1]
+                while len(body) < content_length:
+                    body += client_socket.recv(content_length - len(body)).decode('utf-8')
+                print("Body received:", body)
+                
+                # Convert the JSON string to a dictionary
+                message = json.loads(body)['data']
+                
+                
+                self.display_code(message)
+                
+                response = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{\"status\": \"success\"}"
+                client_socket.send(response.encode())
+            else:
+                response = "HTTP/1.1 404 Not Found\r\n\r\n"
+                client_socket.send(response.encode())
+        except Exception as e:
+            print("Error handling request:", e)
+        finally:
+            client_socket.close()
         
 
 
 
 if __name__ == "__main__":
     esp = ESP32MainCode()
+    ip = esp.connect_to_wifi("StormFiber","wlanad696f")
+    server_socket = esp.start_server(ip)
+    while True:
+        client_socket,_ = server_socket.accept()
+        time.sleep(2)
+        esp.handle_client(client_socket)
     
 
 
