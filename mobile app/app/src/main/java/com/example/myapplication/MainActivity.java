@@ -61,24 +61,43 @@ public class MainActivity extends AppCompatActivity {
 
         client.newCall(request).enqueue(new Callback() {
             @Override
-            public void onFailure(Call call, IOException e) {
-                e.printStackTrace();
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        textViewResponse.setText("Error: " + e.getMessage());
-                    }
-                });
-            }
+            public void run() {
+                try {
+                    URL url = new URL("http://192.168.44.115:1000/api/submit"); // Use your host IP and port
+                    HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+                    urlConnection.setRequestMethod("POST");
+                    urlConnection.setDoOutput(true);
+                    urlConnection.setRequestProperty("Content-Type", "application/json");
 
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                if (response.isSuccessful()) {
-                    final String responseBody = response.body().string();
-                    try {
-                        JSONObject jsonObject = new JSONObject(responseBody);
-                        JSONObject inputReceived = jsonObject.getJSONObject("input_received");
-                        String message = inputReceived.getString("message");
+                    // Create JSON object to send to the server
+                    JSONObject jsonParam = new JSONObject();
+                    jsonParam.put("userInput", userInput);
+
+                    // Write the JSON data to the output stream
+                    OutputStream os = urlConnection.getOutputStream();
+                    os.write(jsonParam.toString().getBytes("UTF-8"));
+                    os.close();
+
+                    int responseCode = urlConnection.getResponseCode();
+                    if (responseCode == HttpURLConnection.HTTP_OK) { // 200 OK
+                        BufferedReader in = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
+                        String inputLine;
+                        StringBuilder response = new StringBuilder();
+
+                        while ((inputLine = in.readLine()) != null) {
+                            response.append(inputLine);
+                        }
+                        in.close();
+
+                        // Update UI with the response on the main thread
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                textViewResponse.setText(response.toString());
+                            }
+                        });
+                    } else {
+                        // Handle response code other than 200
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
@@ -100,3 +119,19 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 }
+
+/*
+* on clicking the button get all the texts
+* next:
+* HashMp<String,object> data = new hashMap<>();
+* data.put("name",name);
+* data.put("id",id);
+*
+* FirebaseDatabase.getInstance().getReference().child("Students").setValue(data).addOnSuccessListener(new On SuccessListener){
+*
+* }
+*
+* If we want to connect 2 or more activities with each other, we'll use 'Intent'
+*
+* Firebase REcycler Adapter
+* */
