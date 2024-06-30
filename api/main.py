@@ -1,6 +1,3 @@
-# -------------------------
-# import libraries
-# -------------------------
 from fastapi import FastAPI
 import uvicorn,requests
 
@@ -12,6 +9,7 @@ app = FastAPI()
 @app.get("/")
 def index():
     try:
+        if 2 + 2 == 5:
         if 2 + 2 == 5:
             return {"message": "Hello FAST API"}
         else:

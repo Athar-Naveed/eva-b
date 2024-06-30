@@ -32,7 +32,6 @@ android {
 }
 
 dependencies {
-
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.activity)
@@ -40,4 +39,9 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+
+    // OkHttp dependency
+    implementation("com.squareup.okhttp3:okhttp:4.9.2")
+    // Gson dependency
+    implementation("com.google.code.gson:gson:2.8.8")
 }
