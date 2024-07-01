@@ -10,7 +10,6 @@ app = FastAPI()
 def index():
     try:
         if 2 + 2 == 5:
-        if 2 + 2 == 5:
             return {"message": "Hello FAST API"}
         else:
             return {"message": "Math Error", "status": 404}   
@@ -28,7 +27,7 @@ def submit(message: str):
     resp = aiml.response_to_user(message)
     try:
         # URL of the ESP32 server endpoint
-        esp32_url = "http://192.168.1.16:80/api/text_message_display"
+        esp32_url = "http://192.168.43.184:80/api/text_message_display"
         
         # Payload to send to the ESP32 server
         data = {"data": resp}
