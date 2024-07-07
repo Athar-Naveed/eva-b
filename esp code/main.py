@@ -9,9 +9,13 @@ import socket,network,time,camera
 
 
 class ESP32MainCode:
-    def __init__(self) -> None:
-        self.checks()
-        self.greet_disp()
+    def __init__(self,mode="prod") -> None:
+        if mode == "prod":
+            self.checks()
+            self.greet_disp()
+            #self.outside_temp()
+        else:
+            print(f"{mode} mode! Ignoring checks...")
         
     
     def greet_disp(self)->bool:
@@ -25,6 +29,7 @@ class ESP32MainCode:
         # --------------------
         call_disp = 0
         call_temp = 0
+        call_room_temp_humid = 0
         # --------------------
         # checking display
         # --------------------
@@ -57,6 +62,24 @@ class ESP32MainCode:
             print("Too hot to run esp32-cam!")
             self.display_code("Too hot to run esp32-cam!")
             time.sleep(2)
+        # --------------------
+        # checking outside temp and humidity
+        # --------------------
+        print("Checking room temp and humidity...")
+        self.display_code(f"Checking room temp and humidity...")
+        time.sleep(2)
+        while call_room_temp_humid < 4:
+            call_room_temp_humid += 1
+            temp,humid = self.room_temp()
+            if (temp and humid) and temp < 50:
+                print("Temp. Check Okay!")
+                self.display_code(f"Temp. and Humidity Check Okay! Temp: {temp}C -- Humid: {humid}%")
+                time.sleep(4)
+                break
+        else:
+            print("Too hot room to run esp32-cam!")
+            self.display_code("Too hot room to run esp32-cam!")
+            time.sleep(2)
         print("Running checks completed!")
         self.display_code("Running checks completed!")
         time.sleep(2)
@@ -84,6 +107,24 @@ class ESP32MainCode:
         print(f"ESP32-cam temperature: {temperature}°C")
         return temperature
     
+    def room_temp(self):
+        """
+
+        """
+        from dht import DHT11
+        from machine import Pin
+        
+        
+        dht11= DHT11(Pin(2,Pin.OUT))
+        dht11.measure()
+        temp,humid = dht11.temperature(),dht11.humidity()
+        if temp and humid:
+            print(f"Temp: {temp}°C -- Humid: {humid}%")
+            return temp,humid
+        else:
+            print(f"Temperature and Humidity sensor (Dht11) not working")
+            return False
+    
     def wifi_access_point(self, ssid="ESP32-CAM", password="12345678"):
         """
         Start the ESP32-CAM as an access point.
@@ -101,6 +142,8 @@ class ESP32MainCode:
         ap.active(True)
         ap.config(essid=ssid, password=password)
         print("Access Point started with SSID:", ssid)
+        self.display_code(ssid)
+        self.display_code(password)
         while not ap.active():
             pass
         ip_address = ap.ifconfig()[0]

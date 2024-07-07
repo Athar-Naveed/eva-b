@@ -9,6 +9,7 @@ EVA-B is our term project, the idea is that it will assist its user in doing dai
 
 ## Features
 1. Proper Communication bot: (Sender)-(Receiver)
+- Text-Text
 - Audio-Audio
 - Text-Audio
 2. Human, Plant, and Animal Recognition

@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 import uvicorn,requests
 
+
 app = FastAPI()
+
 
 #--------------------------
 # simple get request
@@ -9,7 +11,6 @@ app = FastAPI()
 @app.get("/")
 def index():
     try:
-        if 2 + 2 == 5:
         if 2 + 2 == 5:
             return {"message": "Hello FAST API"}
         else:
@@ -21,14 +22,15 @@ def index():
 # simple post request
 #--------------------------
 @app.post("/api/text_message")
-def submit(message: str):
+def submit(message: dict):
     from bot_convo import AIML
-    print(f"Received input from user: {message}")
+    msg = message['message']
     aiml = AIML()
-    resp = aiml.response_to_user(message)
+    resp = aiml.response_to_user(msg)
+    print(f"resp:{resp}")
     try:
         # URL of the ESP32 server endpoint
-        esp32_url = "http://192.168.1.16:80/api/text_message_display"
+        esp32_url = "http://192.168.1.17:80/api/text_message_display"
         
         # Payload to send to the ESP32 server
         data = {"data": resp}
@@ -44,4 +46,4 @@ def submit(message: str):
         return {"message": str(e), "status": 500}
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="172.17.0.1", port=8000, reload=True)
+    uvicorn.run("main:app", host="192.168.1.15",port=8000, reload=True)

@@ -4,6 +4,8 @@
 import os,aiml
 from glob import glob
 # from neo4py.neo4py import Graph
+
+
 # ----------------------
 # AIML code starts here
 # ----------------------
@@ -19,13 +21,16 @@ class AIML:
         return:
         None is returned
         """
+        brain = "./brain/brain.dump"
         self.eva = aiml.Kernel()
-        if os.path.isfile('../bot_brain.brn'):
-            self.eva.bootstrap(brainFile='../bot_brain.brn')
+        if os.path.exists(brain):
+            print("Loading information from the EVA's brain")
+            self.eva.loadBrain(brain)
         else:
-            self.eva.learn("udc.xml")
-            self.eva.respond("LOAD AIML B")
-            self.eva.saveBrain("../bot_brain.brn")
+            self.eva.bootstrap(learnFiles="../aiml/*.aiml",commands="LEARN AIML")
+            print(f"Saving information in the EVA's brain: {brain}")
+            self.eva.saveBrain(brain)
+        
 
     def response_to_user(self,user_input:str)->str:
         """
