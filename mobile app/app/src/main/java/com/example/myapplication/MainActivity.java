@@ -11,8 +11,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.IOException;
-
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.MediaType;
@@ -21,8 +19,10 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
+import java.io.IOException;
+
 public class MainActivity extends AppCompatActivity {
-    String apiUrl = "192.168.43.226";
+    String apiUrl = "http://192.168.1.15:8000/api/text_message";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,7 +31,7 @@ public class MainActivity extends AppCompatActivity {
 
         EditText editTextUserInput = findViewById(R.id.editTextInput);
         Button buttonSend = findViewById(R.id.buttonSubmit);
-        TextView textViewResponse = findViewById(R.id.textViewResponse);
+        TextView textViewResponse = findViewById(R.id.chat_container);
 
         buttonSend.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -40,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     sendPostRequest(userInput, textViewResponse);
                 } catch (JSONException e) {
-                    throw new RuntimeException(e);
+                    e.printStackTrace();
                 }
             }
         });
@@ -50,62 +50,44 @@ public class MainActivity extends AppCompatActivity {
         OkHttpClient client = new OkHttpClient();
 
         JSONObject jsonParam = new JSONObject();
-        jsonParam.put("message", userInput); // Update the key to "message"
+        jsonParam.put("message", userInput);
 
         RequestBody requestBody = RequestBody.create(MediaType.get("application/json; charset=utf-8"), jsonParam.toString());
 
         Request request = new Request.Builder()
-                .url("http://192.168.43.226:1000/api/submit")
+                .url(apiUrl)
                 .post(requestBody)
                 .build();
 
         client.newCall(request).enqueue(new Callback() {
             @Override
-            public void run() {
-                try {
-                    URL url = new URL("http://192.168.44.115:1000/api/submit"); // Use your host IP and port
-                    HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-                    urlConnection.setRequestMethod("POST");
-                    urlConnection.setDoOutput(true);
-                    urlConnection.setRequestProperty("Content-Type", "application/json");
+            public void onFailure(Call call, IOException e) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        textViewResponse.setText("Request Failed: " + e.getMessage());
+                    }
+                });
+            }
 
-                    // Create JSON object to send to the server
-                    JSONObject jsonParam = new JSONObject();
-                    jsonParam.put("userInput", userInput);
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                if (response.isSuccessful()) {
+                    try {
+                        final JSONObject responseData = new JSONObject(response.body().string());
 
-                    // Write the JSON data to the output stream
-                    OutputStream os = urlConnection.getOutputStream();
-                    os.write(jsonParam.toString().getBytes("UTF-8"));
-                    os.close();
-
-                    int responseCode = urlConnection.getResponseCode();
-                    if (responseCode == HttpURLConnection.HTTP_OK) { // 200 OK
-                        BufferedReader in = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
-                        String inputLine;
-                        StringBuilder response = new StringBuilder();
-
-                        while ((inputLine = in.readLine()) != null) {
-                            response.append(inputLine);
-                        }
-                        in.close();
-
-                        // Update UI with the response on the main thread
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                textViewResponse.setText(response.toString());
-                            }
-                        });
-                    } else {
-                        // Handle response code other than 200
+                        // Extract the "message_returned" value
+                        String message = responseData.getString("message_returned");
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
                                 textViewResponse.setText(message);
                             }
                         });
-                    } catch (JSONException e) {
+                    }
+                    catch (JSONException e) {
                         e.printStackTrace();
+                        // Handle JSON parsing error (optional: display an error message)
                     }
                 } else {
                     runOnUiThread(new Runnable() {
@@ -117,21 +99,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+
     }
 }
-
-/*
-* on clicking the button get all the texts
-* next:
-* HashMp<String,object> data = new hashMap<>();
-* data.put("name",name);
-* data.put("id",id);
-*
-* FirebaseDatabase.getInstance().getReference().child("Students").setValue(data).addOnSuccessListener(new On SuccessListener){
-*
-* }
-*
-* If we want to connect 2 or more activities with each other, we'll use 'Intent'
-*
-* Firebase REcycler Adapter
-* */
